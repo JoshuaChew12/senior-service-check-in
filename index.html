@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<style>
+body { font-family: Arial; text-align:center; padding:20px; }
+
+button { padding:16px; margin:10px; font-size:18px; }
+input { padding:14px; font-size:18px; width:220px; }
+
+#scanner { width:320px; margin:auto; }
+
+.success { background:#d4edda; }
+.duplicate { background:#fff3cd; }
+.error { background:#f8d7da; }
+</style>
+</head>
+
+<body>
+
+<h2>Senior Service Check-in</h2>
+
+<h3>Checked-in: <span id="count">0</span></h3>
+
+<!-- HOME -->
+<div id="home">
+  <button onclick="openScan()">📷 Scan QR</button>
+  <button onclick="openManual()">⌨️ Manual Input</button>
+</div>
+
+<!-- SCAN -->
+<div id="scanPage" style="display:none;">
+  <h3>Scan QR Code</h3>
+  <div id="scanner"></div>
+
+  <button onclick="goHome()">⬅️ Back</button>
+</div>
+
+<!-- MANUAL -->
+<div id="manualPage" style="display:none;">
+  <h3>Manual Check-in</h3>
+
+  <input id="idInput" placeholder="Enter ID"
+    onkeypress="if(event.key==='Enter') manualCheck()">
+
+  <br><br>
+
+  <button onclick="manualCheck()">Check-in</button>
+
+  <br>
+
+  <button onclick="goHome()">⬅️ Back</button>
+</div>
+
+<!-- RESULT -->
+<div id="resultPage" style="display:none;">
+  <div id="resultContent"></div>
+
+  <br><br>
+
+  <button onclick="nextAction()">Submit Another</button>
+  <button onclick="goHome()">Home</button>
+</div>
+
+<script>
+
+// 🔥 Firebase
+firebase.initializeApp({
+  databaseURL: "https://senior-service-check-in-default-rtdb.asia-southeast1.firebasedatabase.app/"
+});
+
+const db = firebase.database();
+
+// realtime counter
+db.ref("count").on("value", snap => {
+  document.getElementById("count").innerText = snap.val() || 0;
+});
+
+const API_URL = "https://script.google.com/macros/s/AKfycbyF7v7Kzddzb32-s4LJSN4NsseNcZqrLsXeTWVuuBpq5pMpMZFfEiTqFtmlfbRfUXeOpQ/exec";
+
+function callAPI(id) {
+
+  showLoading();
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000); // 5秒保护
+
+  fetch(API_URL + "?id=" + encodeURIComponent(id), {
+    signal: controller.signal
+  })
+    .then(r => r.json())
+    .then(data => handleResult(data))
+    .catch(err => {
+
+      handleResult({
+        type: "error",
+        message: "Network error / timeout"
+      });
+
+    })
+    .finally(() => {
+      clearTimeout(timeout);
+    });
+}
+let scanner = null;
+let scanning = false;
+let currentMode = "";
+
+// 📷 Scan
+function openScan() {
+  currentMode = "scan";
+
+  hideAll();
+  document.getElementById("scanPage").style.display = "block";
+
+  const scannerElement = document.getElementById("scanner");
+
+  // 🔥 清空 DOM（非常重要）
+  scannerElement.innerHTML = "";
+
+  if (!scanner) {
+    scanner = new Html5Qrcode("scanner");
+  }
+
+  scanning = true;
+
+  scanner.start(
+    { facingMode: "environment" },
+    {
+      fps: 15,
+      qrbox: 250,
+      aspectRatio: 1.0
+    },
+    onScanSuccess
+  ).catch(err => {
+    console.log("Camera start failed:", err);
+  });
+}
+function onScanSuccess(text) {
+  if (!scanning) return;
+
+  scanning = false;
+  scanner.stop();
+
+  callAPI(text);
+}
+
+// ⌨️ Manual
+function openManual() {
+  currentMode = "manual";
+  hideAll();
+  document.getElementById("manualPage").style.display = "block";
+  document.getElementById("idInput").value = "";
+  document.getElementById("idInput").focus();
+}
+
+function manualCheck() {
+  const id = document.getElementById("idInput").value.trim();
+  if (!id) return;
+
+  callAPI(id);
+}
+
+// 🎯 result handler
+function handleResult(data) {
+
+  const page = document.getElementById("resultPage");
+  let html = "";
+
+  const beep = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+  if (navigator.vibrate) navigator.vibrate(100);
+
+  if (data.type === "success") {
+
+    page.className = "success";
+
+    html = `
+      <div style="font-size:70px;color:green;font-weight:bold;">
+        ${data.chineseName}
+      </div>
+      <div style="font-size:40px;">
+        ${data.englishName}
+      </div>
+      <br>
+      <div style="font-size:30px;">Checked In</div>
+      <div style="font-size:26px;">${data.time}</div>
+    `;
+
+    beep.play();
+
+    db.ref("count").transaction(v => (v || 0) + 1);
+
+  } else if (data.type === "duplicate") {
+
+    page.className = "duplicate";
+
+    html = `
+      <div style="font-size:50px;color:orange;">
+        Already Checked In
+      </div>
+      <br>
+      <div style="font-size:60px;">
+        ${data.chineseName}
+      </div>
+      <div style="font-size:40px;">
+        ${data.englishName}
+      </div>
+      <br>
+      <div style="font-size:28px;">Check-in Time</div>
+      <div style="font-size:32px;">${data.time}</div>
+    `;
+
+  } else {
+
+    page.className = "error";
+
+    html = `
+      <div style="font-size:50px;color:red;">
+        ${data.message}
+      </div>
+    `;
+  }
+
+  document.getElementById("resultContent").innerHTML = html;
+}
+
+// 🔁 Submit Another
+function nextAction() {
+  if (currentMode === "scan") {
+
+    // 🔥 重新初始化 DOM + restart camera
+    document.getElementById("scanner").innerHTML = "";
+    openScan();
+
+  } else {
+    openManual();
+  }
+}
+
+// 🏠 Back（no reload）
+async function goHome() {
+
+  hideAll();
+  document.getElementById("home").style.display = "block";
+
+  if (scanner && scanning) {
+    try {
+      await scanner.stop();
+    } catch (e) {}
+
+    scanning = false;
+  }
+
+  // ⚠️ 不 clear scanner（重点！）
+}
+
+// util
+function showLoading() {
+  hideAll();
+  document.getElementById("resultPage").style.display = "block";
+  document.getElementById("resultContent").innerHTML =
+    "<div style='font-size:40px;'>⏳ Checking...</div>";
+}
+
+function hideAll() {
+  document.getElementById("home").style.display = "none";
+  document.getElementById("scanPage").style.display = "none";
+  document.getElementById("manualPage").style.display = "none";
+  document.getElementById("resultPage").style.display = "none";
+}
+
+</script>
+
+</body>
+</html>
