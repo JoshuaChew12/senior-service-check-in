@@ -24,10 +24,11 @@ input { padding:14px; font-size:18px; width:220px; }
 </head>
 
 <body>
+  
+<h2>乐临聚会报到系统</h2>  
+<h3>Senior Service Check-in</h3>
 
-<h2>Senior Service Check-in</h2>
-
-<h3>Checked-in: <span id="count">0</span></h3>
+<h4>Checked-in: <span id="count">0</span></h4>
 
 <!-- HOME -->
 <div id="home">
@@ -37,7 +38,7 @@ input { padding:14px; font-size:18px; width:220px; }
 
 <!-- SCAN -->
 <div id="scanPage" style="display:none;">
-  <h3>Scan QR Code</h3>
+  <h4>Scan QR Code</h4>
   <div id="scanner"></div>
 
   <button onclick="goHome()">⬅️ Back</button>
@@ -45,7 +46,7 @@ input { padding:14px; font-size:18px; width:220px; }
 
 <!-- MANUAL -->
 <div id="manualPage" style="display:none;">
-  <h3>Manual Check-in</h3>
+  <h4>Manual Check-in</h4>
 
   <input id="idInput" placeholder="Enter ID"
     onkeypress="if(event.key==='Enter') manualCheck()">
