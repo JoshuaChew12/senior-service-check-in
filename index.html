@@ -277,17 +277,42 @@ async function openScan() {
   document.getElementById("scanPage")
     .style.display = "block";
 
+  // =====================================
+  // CREATE SCANNER ONCE
+  // =====================================
+
   if (!scanner) {
 
     scanner = new Html5Qrcode("scanner");
 
   }
 
+  // =====================================
+  // IF ALREADY STARTED
+  // JUST RESUME
+  // =====================================
+
   if (scannerStarted) {
+
+    try {
+
+      await scanner.resume();
+
+      scanCooldown = false;
+
+    } catch (err) {
+
+      console.log(err);
+
+    }
 
     return;
 
   }
+
+  // =====================================
+  // FIRST START
+  // =====================================
 
   try {
 
@@ -308,6 +333,8 @@ async function openScan() {
     );
 
     scannerStarted = true;
+
+    scanCooldown = false;
 
   } catch (err) {
 
