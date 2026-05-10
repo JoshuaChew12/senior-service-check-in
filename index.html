@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -13,7 +11,6 @@ content="width=device-width, initial-scale=1">
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
-
 body{
   font-family:Arial;
   text-align:center;
@@ -48,7 +45,6 @@ input{
 .error{
   background:#f8d7da;
 }
-
 </style>
 
 </head>
@@ -64,7 +60,6 @@ Checked-in:
 </h4>
 
 <!-- HOME -->
-
 <div id="home">
 
 <button onclick="openScan()">
@@ -78,7 +73,6 @@ Checked-in:
 </div>
 
 <!-- SCAN -->
-
 <div id="scanPage" style="display:none;">
 
 <h4>Scan QR Code</h4>
@@ -92,7 +86,6 @@ Checked-in:
 </div>
 
 <!-- MANUAL -->
-
 <div id="manualPage" style="display:none;">
 
 <h4>Manual Check-in</h4>
@@ -118,7 +111,6 @@ Check-in
 </div>
 
 <!-- RESULT -->
-
 <div id="resultPage" style="display:none;">
 
 <div id="resultContent"></div>
@@ -157,6 +149,8 @@ firebase.initializeApp({
 
 const db = firebase.database();
 
+// realtime counter
+
 db.ref("count").on("value", snap => {
 
   document.getElementById("count")
@@ -169,11 +163,8 @@ db.ref("count").on("value", snap => {
 // =====================================
 
 let scanner = null;
-
 let scannerStarted = false;
-
 let currentMode = "";
-
 let scanCooldown = false;
 
 // =====================================
@@ -188,7 +179,6 @@ beep.preload = "auto";
 
 // =====================================
 // AUTO WARMUP
-// 页面打开立即预热
 // =====================================
 
 window.addEventListener("load", () => {
@@ -287,19 +277,11 @@ async function openScan() {
   document.getElementById("scanPage")
     .style.display = "block";
 
-  // =====================================
-  // CREATE ONCE ONLY
-  // =====================================
-
   if (!scanner) {
 
     scanner = new Html5Qrcode("scanner");
 
   }
-
-  // =====================================
-  // ALREADY RUNNING
-  // =====================================
 
   if (scannerStarted) {
 
@@ -343,19 +325,16 @@ async function openScan() {
 
 async function onScanSuccess(text) {
 
-  // 防连续扫描
   if (scanCooldown) return;
 
   scanCooldown = true;
 
-  // vibration
   if (navigator.vibrate) {
 
     navigator.vibrate(80);
 
   }
 
-  // pause scanner only
   await scanner.pause(true);
 
   callAPI(text);
@@ -506,7 +485,7 @@ function handleResult(data) {
         ${data.time}
       </div>
 
-    ";
+    `;
 
   }
 
@@ -527,7 +506,7 @@ function handleResult(data) {
         ${data.message}
       </div>
 
-    ";
+    `;
 
   }
 
@@ -541,10 +520,6 @@ function handleResult(data) {
 // =====================================
 
 async function nextAction() {
-
-  // =====================================
-  // SCAN MODE
-  // =====================================
 
   if (currentMode === "scan") {
 
@@ -565,10 +540,6 @@ async function nextAction() {
 
   }
 
-  // =====================================
-  // MANUAL MODE
-  // =====================================
-
   openManual();
 
 }
@@ -586,7 +557,6 @@ async function goHome() {
 
   scanCooldown = false;
 
-  // pause only
   if (scanner && scannerStarted) {
 
     try {
