@@ -4,7 +4,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- PRECONNECT -->
+<!-- PRECONNECT (GAS OPTIMIZATION) -->
 <link rel="preconnect" href="https://script.google.com">
 <link rel="preconnect" href="https://script.gstatic.com">
 <link rel="dns-prefetch" href="https://script.google.com">
@@ -12,10 +12,12 @@
 
 <script src="https://unpkg.com/html5-qrcode"></script>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <style>
+
 body{
   font-family:Arial;
   text-align:center;
@@ -39,11 +41,22 @@ input{
   margin:auto;
 }
 
-.success{ background:#d4edda; }
-.duplicate{ background:#fff3cd; }
-.error{ background:#f8d7da; }
+.success{
+  background:#d4edda;
+}
 
-.loginBox{ margin-top:50px; }
+.duplicate{
+  background:#fff3cd;
+}
+
+.error{
+  background:#f8d7da;
+}
+
+.loginBox{
+  margin-top:50px;
+}
+
 </style>
 
 </head>
@@ -53,259 +66,610 @@ input{
 <h2>乐临聚会报到系统</h2>
 <h3>Senior Service Check-in</h3>
 
-<h4>Checked-in: <span id="count">0</span></h4>
+<h4>
+Checked-in:
+<span id="count">0</span>
+</h4>
 
-<!-- LOGIN -->
+<!-- ===================================== -->
+<!-- LOGIN PAGE -->
+<!-- ===================================== -->
+
 <div id="loginPage" class="loginBox">
 
   <h3>Staff Login</h3>
 
-  <input id="username" placeholder="Username" autocomplete="off">
+  <input
+    id="username"
+    placeholder="Username"
+    autocomplete="off"
+  >
+
   <br><br>
 
-  <input id="password" type="password"
+  <input
+    id="password"
+    type="password"
     placeholder="Password"
-    onkeypress="if(event.key==='Enter') login()">
+    onkeypress="if(event.key==='Enter')login()"
+  >
 
   <br><br>
 
-  <button onclick="login()">Login</button>
+  <button onclick="login()">
+    Login
+  </button>
 
-  <div id="loginError" style="color:red;font-size:18px;"></div>
+  <br><br>
+
+  <div
+    id="loginError"
+    style="
+      color:red;
+      font-size:18px;
+    ">
+  </div>
 
 </div>
 
+<!-- ===================================== -->
 <!-- HOME -->
+<!-- ===================================== -->
+
 <div id="home" style="display:none;">
 
-  <button onclick="openScan()">📷 Scan QR</button>
-  <button onclick="openManual()">⌨️ Manual Input</button>
-  <br>
-  <button onclick="logout()">🚪 Logout</button>
+<button onclick="openScan()">
+📷 Scan QR
+</button>
+
+<button onclick="openManual()">
+⌨️ Manual Input
+</button>
+
+<br>
+
+<button onclick="logout()">
+🚪 Logout
+</button>
 
 </div>
 
+<!-- ===================================== -->
 <!-- SCAN -->
+<!-- ===================================== -->
+
 <div id="scanPage" style="display:none;">
-  <h4>Scan QR Code</h4>
-  <div id="scanner"></div>
-  <button onclick="goHome()">⬅️ Back</button>
+
+<h4>Scan QR Code</h4>
+
+<div id="scanner"></div>
+
+<button onclick="goHome()">
+⬅️ Back
+</button>
+
 </div>
 
+<!-- ===================================== -->
 <!-- MANUAL -->
+<!-- ===================================== -->
+
 <div id="manualPage" style="display:none;">
-  <h4>Manual Check-in</h4>
 
-  <input id="idInput"
-    placeholder="Enter ID"
-    onkeypress="if(event.key==='Enter') manualCheck()">
+<h4>Manual Check-in</h4>
 
-  <br><br>
+<input
+id="idInput"
+placeholder="Enter ID"
+onkeypress="if(event.key==='Enter')manualCheck()"
+>
 
-  <button onclick="manualCheck()">Check-in</button>
-  <button onclick="goHome()">⬅️ Back</button>
+<br><br>
+
+<button onclick="manualCheck()">
+Check-in
+</button>
+
+<br>
+
+<button onclick="goHome()">
+⬅️ Back
+</button>
 
 </div>
 
+<!-- ===================================== -->
 <!-- RESULT -->
+<!-- ===================================== -->
+
 <div id="resultPage" style="display:none;">
-  <div id="resultContent"></div>
-  <br><br>
-  <button onclick="nextAction()">Submit Another</button>
-  <button onclick="goHome()">Home</button>
+
+<div id="resultContent"></div>
+
+<br><br>
+
+<button onclick="nextAction()">
+Submit Another
+</button>
+
+<button onclick="goHome()">
+Home
+</button>
+
 </div>
 
 <script>
 
-// ================= CONFIG =================
+// =====================================
+// CONFIG
+// =====================================
+
 const API_URL =
 "https://script.google.com/macros/s/AKfycbyF7v7Kzddzb32-s4LJSN4NsseNcZqrLsXeTWVuuBpq5pMpMZFfEiTqFtmlfbRfUXeOpQ/exec";
 
-// ================= FIREBASE =================
+// =====================================
+// FIREBASE
+// =====================================
+
 firebase.initializeApp({
+
   databaseURL:
   "https://senior-service-check-in-default-rtdb.asia-southeast1.firebasedatabase.app/"
+
 });
 
 const db = firebase.database();
 
+// realtime counter
+
 db.ref("count").on("value", snap => {
-  document.getElementById("count").innerText = snap.val() || 0;
+
+  document.getElementById("count")
+    .innerText = snap.val() || 0;
+
 });
 
-// ================= STATE =================
+// =====================================
+// GLOBALS
+// =====================================
+
 let scanner = null;
 let scannerStarted = false;
-let scanCooldown = false;
 let currentMode = "";
+let scanCooldown = false;
 
-// ================= SOUND =================
+// =====================================
+// PRELOAD BEEP
+// =====================================
+
 const beep = new Audio(
 "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"
 );
 
-// ================= SMART WARMUP =================
-function warmup(type="full") {
+beep.preload = "auto";
 
-  let url = API_URL + "?action=warmup";
+// =====================================
+// APP START
+// =====================================
 
-  if (type !== "full") {
-    url += "&type=" + type;
-  }
-
-  fetch(url, {
-    cache: "no-store",
-    keepalive: true
-  }).catch(() => {});
-}
-
-// ================= APP START =================
 window.addEventListener("load", () => {
 
-  warmup("login");
+  // =====================================
+  // LOGIN CHECK
+  // =====================================
 
-  setInterval(() => warmup("full"), 300000);
-
-  const auth = sessionStorage.getItem("auth");
+  const auth =
+    sessionStorage.getItem("auth");
 
   if (auth === "true") {
+
     showApp();
+
   } else {
+
     showLoginPage();
+
   }
 
 });
 
-// ================= LOGIN =================
+// =====================================
+// LOGIN
+// =====================================
+
 function login() {
 
-  warmup("login");
+  warmup(); // ⭐加在这里（关键）
+  
+  const username =
+    document.getElementById("username")
+      .value
+      .trim();
 
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const password =
+    document.getElementById("password")
+      .value
+      .trim();
+
+  // =====================================
+  // EMPTY CHECK
+  // =====================================
 
   if (!username || !password) {
-    document.getElementById("loginError").innerText = "Enter username and password";
+
+    document.getElementById("loginError")
+      .innerText =
+      "Enter username and password";
+
     return;
+
   }
 
-  document.getElementById("loginError").innerText = "⏳ Logging in...";
+  // =====================================
+  // LOADING
+  // =====================================
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000);
+  showLoginLoading();
+
+  // =====================================
+  // TIMEOUT PROTECTION
+  // =====================================
+
+  const controller =
+    new AbortController();
+
+  const timeout =
+    setTimeout(() => {
+
+      controller.abort();
+
+    }, 20000);
+
+  // =====================================
+  // LOGIN REQUEST
+  // =====================================
 
   fetch(
+
     API_URL +
+
     "?action=login" +
-    "&username=" + encodeURIComponent(username) +
-    "&password=" + encodeURIComponent(password),
+
+    "&username=" +
+    encodeURIComponent(username) +
+
+    "&password=" +
+    encodeURIComponent(password),
+
     {
+
       signal: controller.signal,
-      cache: "no-store"
+
+      cache: "no-store",
+
+      keepalive: true
+
     }
+
   )
+
   .then(r => r.json())
+
   .then(data => {
 
+    // =====================================
+    // SUCCESS
+    // =====================================
+
     if (data.success) {
-      sessionStorage.setItem("auth","true");
-      sessionStorage.setItem("username",data.username);
-      sessionStorage.setItem("role",data.role);
+
+      sessionStorage.setItem(
+        "auth",
+        "true"
+      );
+
+      sessionStorage.setItem(
+        "username",
+        data.username
+      );
+
+      sessionStorage.setItem(
+        "role",
+        data.role
+      );
+
       showApp();
+
       return;
+
     }
 
-    document.getElementById("loginError").innerText = "Invalid login";
+    // =====================================
+    // INVALID LOGIN
+    // =====================================
+
+    document.getElementById("loginError")
+      .innerText =
+      "Invalid username or password";
+
+    showLoginPage();
 
   })
+
+  // =====================================
+  // NETWORK ERROR / TIMEOUT
+  // =====================================
+
   .catch(err => {
 
-    document.getElementById("loginError").innerText =
-      err.name === "AbortError" ? "Login timeout" : "Network error";
+    // timeout
+    if (err.name === "AbortError") {
+
+      document.getElementById("loginError")
+        .innerText =
+        "Login timeout";
+
+      showLoginPage();
+
+      return;
+
+    }
+
+    // other network errors
+    document.getElementById("loginError")
+      .innerText =
+      "Network error";
+
+    showLoginPage();
 
   })
-  .finally(() => clearTimeout(timeout));
+
+  // =====================================
+  // CLEAR TIMER
+  // =====================================
+
+  .finally(() => {
+
+    clearTimeout(timeout);
+
+  });
 
 }
 
-// ================= LOGOUT =================
+// =====================================
+// LOGOUT
+// =====================================
+
 function logout() {
+
   sessionStorage.clear();
+
+  goHome();
+
+  hideAll();
+
   showLoginPage();
+
 }
 
-// ================= UI =================
-function showApp(){
+// =====================================
+// SHOW APP
+// =====================================
+
+function showApp() {
+
   hideAll();
-  document.getElementById("home").style.display="block";
+
+  document.getElementById("home")
+    .style.display = "block";
+
 }
 
-function showLoginPage(){
+// =====================================
+// SHOW LOGIN PAGE
+// =====================================
+
+function showLoginPage() {
+
   hideAll();
-  document.getElementById("loginPage").style.display="block";
-  document.getElementById("loginError").innerText="";
-  document.getElementById("username").value="";
-  document.getElementById("password").value="";
+
+  document.getElementById("loginPage")
+    .style.display = "block";
+
+  // reset UI state
+  document.getElementById("loginError")
+    .innerHTML = "";
+
+  document.getElementById("username").value = "";
+  document.getElementById("password").value = "";
+
 }
 
-// ================= CHECK-IN =================
-function callAPI(id){
+// =====================================
+// LOGIN LOADING
+// =====================================
+
+function showLoginLoading() {
+
+  document.getElementById("loginError")
+    .innerHTML =
+    "⏳ Logging in...";
+
+}
+
+// =====================================
+// WARMUP
+// =====================================
+
+function warmup() {
+
+  fetch(
+    API_URL + "?action=warmup",
+    {
+      cache: "no-store",
+      keepalive: true
+    }
+  ).catch(() => {});
+
+}
+
+// =====================================
+// API CALL
+// =====================================
+
+function callAPI(id) {
+
+  showLoading();
 
   const controller = new AbortController();
-  const timeout = setTimeout(()=>controller.abort(),15000);
 
-  fetch(API_URL + "?id=" + encodeURIComponent(id),{
-    signal: controller.signal,
-    cache:"no-store"
+  const timeout = setTimeout(() => {
+
+    controller.abort();
+
+  }, 20000);
+
+  fetch(
+
+    API_URL + "?id=" +
+    encodeURIComponent(id),
+
+    {
+      signal: controller.signal,
+      cache: "no-store",
+      keepalive: true
+    }
+
+  )
+
+  .then(r => r.json())
+
+  .then(data => {
+
+    handleResult(data);
+
   })
-  .then(r=>r.json())
-  .then(handleResult)
-  .catch(()=>handleResult({
-    type:"error",
-    message:"Network error"
-  }))
-  .finally(()=>clearTimeout(timeout));
+
+  .catch(() => {
+
+    handleResult({
+
+      type: "error",
+
+      message:
+      "Network error / timeout"
+
+    });
+
+  })
+
+  .finally(() => {
+
+    clearTimeout(timeout);
+
+  });
 
 }
 
-// ================= SCAN =================
-async function openScan(){
+// =====================================
+// OPEN SCAN
+// =====================================
 
-  warmup("checkin");
+async function openScan() {
 
-  currentMode="scan";
+  warmup(); // ⭐加在这里（关键）
+  
+  currentMode = "scan";
 
   hideAll();
-  document.getElementById("scanPage").style.display="block";
 
-  if(!scanner){
+  document.getElementById("scanPage")
+    .style.display = "block";
+
+  // =====================================
+  // CREATE SCANNER ONCE
+  // =====================================
+
+  if (!scanner) {
+
     scanner = new Html5Qrcode("scanner");
+
   }
 
-  if(scannerStarted){
-    await scanner.resume();
-    scanCooldown=false;
+  // =====================================
+  // IF ALREADY STARTED
+  // JUST RESUME
+  // =====================================
+
+  if (scannerStarted) {
+
+    try {
+
+      await scanner.resume();
+
+      scanCooldown = false;
+
+    } catch (err) {
+
+      console.log(err);
+
+    }
+
     return;
+
   }
 
-  await scanner.start(
-    {facingMode:"environment"},
-    {fps:15,qrbox:250},
-    onScanSuccess
-  );
+  // =====================================
+  // FIRST START
+  // =====================================
 
-  scannerStarted=true;
-  scanCooldown=false;
+  try {
+
+    await scanner.start(
+
+      {
+        facingMode: "environment"
+      },
+
+      {
+        fps: 15,
+        qrbox: 250,
+        aspectRatio: 1
+      },
+
+      onScanSuccess
+
+    );
+
+    scannerStarted = true;
+
+    scanCooldown = false;
+
+  } catch (err) {
+
+    alert("Camera failed");
+
+    console.log(err);
+
+  }
 
 }
 
-async function onScanSuccess(text){
+// =====================================
+// SCAN SUCCESS
+// =====================================
 
-  if(scanCooldown) return;
+async function onScanSuccess(text) {
 
-  scanCooldown=true;
+  if (scanCooldown) return;
 
-  if(navigator.vibrate) navigator.vibrate(80);
+  scanCooldown = true;
+
+  if (navigator.vibrate) {
+
+    navigator.vibrate(80);
+
+  }
 
   await scanner.pause(true);
 
@@ -313,108 +677,284 @@ async function onScanSuccess(text){
 
 }
 
-// ================= MANUAL =================
-function openManual(){
+// =====================================
+// MANUAL
+// =====================================
 
-  warmup("checkin");
+function openManual() {
 
-  currentMode="manual";
+  warmup(); // ⭐加在这里（关键）
+  
+  currentMode = "manual";
 
   hideAll();
 
-  document.getElementById("manualPage").style.display="block";
+  document.getElementById("manualPage")
+    .style.display = "block";
 
-  document.getElementById("idInput").value="";
-  document.getElementById("idInput").focus();
+  const input =
+    document.getElementById("idInput");
+
+  input.value = "";
+
+  input.focus();
 
 }
 
-function manualCheck(){
+function manualCheck() {
 
-  const id=document.getElementById("idInput").value.trim();
-  if(!id) return;
+  const id =
+    document.getElementById("idInput")
+      .value
+      .trim();
+
+  if (!id) return;
 
   callAPI(id);
 
 }
 
-// ================= RESULT =================
-function handleResult(data){
+// =====================================
+// HANDLE RESULT
+// =====================================
+
+function handleResult(data) {
 
   hideAll();
 
-  const page=document.getElementById("resultPage");
-  page.style.display="block";
+  const page =
+    document.getElementById("resultPage");
 
-  let html="";
+  page.style.display = "block";
 
-  if(data.type==="success"){
+  let html = "";
 
-    page.className="success";
+  // =====================================
+  // SUCCESS
+  // =====================================
 
-    html=`
-      <div style="font-size:70px;color:green;font-weight:bold;">
+  if (data.type === "success") {
+
+    page.className = "success";
+
+    html = `
+
+      <div style="
+      font-size:70px;
+      color:green;
+      font-weight:bold;
+      ">
         ${data.chineseName}
       </div>
-      <div style="font-size:40px;">
+
+      <div style="
+      font-size:40px;
+      ">
         ${data.englishName}
       </div>
-      <div style="font-size:26px;">
+
+      <br>
+
+      <div style="
+      font-size:30px;
+      ">
+        Checked In
+      </div>
+
+      <div style="
+      font-size:26px;
+      ">
         ${data.time}
       </div>
+
     `;
 
-    beep.currentTime=0;
+    beep.currentTime = 0;
+
     beep.play();
 
-    db.ref("count").transaction(v=>(v||0)+1);
-
-  }else if(data.type==="duplicate"){
-
-    page.className="duplicate";
-
-    html=`
-      <div style="font-size:50px;color:orange;">
-        Already Checked In
-      </div>
-      <div style="font-size:40px;">
-        ${data.chineseName}
-      </div>
-      <div style="font-size:26px;">
-        ${data.time}
-      </div>
-    `;
-
-  }else{
-
-    page.className="error";
-    html=<div style="font-size:40px;color:red;">${data.message}</div>;
+    db.ref("count")
+      .transaction(v => (v || 0) + 1);
 
   }
 
-  document.getElementById("resultContent").innerHTML=html;
+  // =====================================
+  // DUPLICATE
+  // =====================================
+
+  else if (data.type === "duplicate") {
+
+    page.className = "duplicate";
+
+    html = `
+
+      <div style="
+      font-size:50px;
+      color:orange;
+      ">
+        Already Checked In
+      </div>
+
+      <br>
+
+      <div style="
+      font-size:60px;
+      ">
+        ${data.chineseName}
+      </div>
+
+      <div style="
+      font-size:40px;
+      ">
+        ${data.englishName}
+      </div>
+
+      <br>
+
+      <div style="
+      font-size:28px;
+      ">
+        Check-in Time
+      </div>
+
+      <div style="
+      font-size:32px;
+      ">
+        ${data.time}
+      </div>
+
+    `;
+
+  }
+
+  // =====================================
+  // ERROR
+  // =====================================
+
+  else {
+
+    page.className = "error";
+
+    html = `
+
+      <div style="
+      font-size:50px;
+      color:red;
+      ">
+        ${data.message}
+      </div>
+
+    `;
+
+  }
+
+  document.getElementById("resultContent")
+    .innerHTML = html;
 
 }
 
-// ================= NAV =================
-function goHome(){
+// =====================================
+// NEXT ACTION
+// =====================================
+
+async function nextAction() {
+
+  if (currentMode === "scan") {
+
+    hideAll();
+
+    document.getElementById("scanPage")
+      .style.display = "block";
+
+    scanCooldown = false;
+
+    if (scanner) {
+
+      await scanner.resume();
+
+    }
+
+    return;
+
+  }
+
+  openManual();
+
+}
+
+// =====================================
+// HOME
+// =====================================
+
+async function goHome() {
+
   hideAll();
-  document.getElementById("home").style.display="block";
+
+  document.getElementById("home")
+    .style.display = "block";
+
+  scanCooldown = false;
+
+  if (scanner && scannerStarted) {
+
+    try {
+
+      await scanner.pause(true);
+
+    } catch(e){}
+
+  }
+
 }
 
-function nextAction(){
-  if(currentMode==="scan") openScan();
-  else openManual();
+// =====================================
+// LOADING
+// =====================================
+
+function showLoading() {
+
+  hideAll();
+
+  const page =
+    document.getElementById("resultPage");
+
+  page.style.display = "block";
+
+  page.className = "";
+
+  document.getElementById("resultContent")
+    .innerHTML = `
+
+      <div style="
+      font-size:40px;
+      ">
+        ⏳ Checking...
+      </div>
+
+    `;
+
 }
 
-// ================= UTIL =================
-function hideAll(){
+// =====================================
+// HIDE ALL
+// =====================================
 
-  document.getElementById("loginPage").style.display="none";
-  document.getElementById("home").style.display="none";
-  document.getElementById("scanPage").style.display="none";
-  document.getElementById("manualPage").style.display="none";
-  document.getElementById("resultPage").style.display="none";
+function hideAll() {
+
+  document.getElementById("loginPage")
+    .style.display = "none";
+
+  document.getElementById("home")
+    .style.display = "none";
+
+  document.getElementById("scanPage")
+    .style.display = "none";
+
+  document.getElementById("manualPage")
+    .style.display = "none";
+
+  document.getElementById("resultPage")
+    .style.display = "none";
 
 }
 
