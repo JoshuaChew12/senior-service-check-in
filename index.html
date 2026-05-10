@@ -237,6 +237,9 @@ let scanner = null;
 let scannerStarted = false;
 let currentMode = "";
 let scanCooldown = false;
+let idleTimer = null;
+
+const IDLE_LIMIT = 30 * 60 * 1000;
 
 // =====================================
 // PRELOAD BEEP
@@ -254,6 +257,20 @@ beep.preload = "auto";
 
 window.addEventListener("load", () => {
 
+  ["click","touchstart","keypress"].forEach(event => {
+
+  document.addEventListener(event, () => {
+
+    if (
+      sessionStorage.getItem("auth") === "true"
+    ) {
+      resetIdleTimer();
+    }
+
+  });
+
+});
+  
   // =====================================
   // LOGIN CHECK
   // =====================================
@@ -378,6 +395,8 @@ function login() {
         data.role
       );
 
+      resetIdleTimer();
+
       showApp();
 
       return;
@@ -449,6 +468,20 @@ function logout() {
   hideAll();
 
   showLoginPage();
+
+}
+
+function resetIdleTimer() {
+
+  clearTimeout(idleTimer);
+
+  idleTimer = setTimeout(() => {
+
+    alert("Session expired");
+
+    logout();
+
+  }, IDLE_LIMIT);
 
 }
 
@@ -577,8 +610,6 @@ function callAPI(id) {
 
 async function openScan() {
 
-  warmup(); // ⭐加在这里（关键）
-  
   currentMode = "scan";
 
   hideAll();
@@ -683,8 +714,6 @@ async function onScanSuccess(text) {
 
 function openManual() {
 
-  warmup(); // ⭐加在这里（关键）
-  
   currentMode = "manual";
 
   hideAll();
@@ -720,6 +749,8 @@ function manualCheck() {
 
 function handleResult(data) {
 
+  resetIdleTimer();
+  
   hideAll();
 
   const page =
