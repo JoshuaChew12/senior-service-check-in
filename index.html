@@ -4,6 +4,12 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- PRECONNECT (GAS OPTIMIZATION) -->
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.gstatic.com">
+<link rel="dns-prefetch" href="https://script.google.com">
+<link rel="dns-prefetch" href="https://script.gstatic.com">
+
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <!-- Firebase -->
@@ -272,7 +278,7 @@ window.addEventListener("load", () => {
 
 });
 
-// =====================================
+/ =====================================
 // LOGIN
 // =====================================
 
@@ -288,6 +294,10 @@ function login() {
       .value
       .trim();
 
+  // =====================================
+  // EMPTY CHECK
+  // =====================================
+
   if (!username || !password) {
 
     document.getElementById("loginError")
@@ -298,7 +308,29 @@ function login() {
 
   }
 
+  // =====================================
+  // LOADING
+  // =====================================
+
   showLoginLoading();
+
+  // =====================================
+  // TIMEOUT PROTECTION
+  // =====================================
+
+  const controller =
+    new AbortController();
+
+  const timeout =
+    setTimeout(() => {
+
+      controller.abort();
+
+    }, 20000);
+
+  // =====================================
+  // LOGIN REQUEST
+  // =====================================
 
   fetch(
 
@@ -313,7 +345,13 @@ function login() {
     encodeURIComponent(password),
 
     {
-      cache: "no-store"
+
+      signal: controller.signal,
+
+      cache: "no-store",
+
+      keepalive: true
+
     }
 
   )
@@ -350,7 +388,7 @@ function login() {
     }
 
     // =====================================
-    // FAILED
+    // INVALID LOGIN
     // =====================================
 
     document.getElementById("loginError")
@@ -361,13 +399,41 @@ function login() {
 
   })
 
-  .catch(() => {
+  // =====================================
+  // NETWORK ERROR / TIMEOUT
+  // =====================================
 
+  .catch(err => {
+
+    // timeout
+    if (err.name === "AbortError") {
+
+      document.getElementById("loginError")
+        .innerText =
+        "Login timeout";
+
+      showLoginPage();
+
+      return;
+
+    }
+
+    // other network errors
     document.getElementById("loginError")
       .innerText =
       "Network error";
 
     showLoginPage();
+
+  })
+
+  // =====================================
+  // CLEAR TIMER
+  // =====================================
+
+  .finally(() => {
+
+    clearTimeout(timeout);
 
   });
 
