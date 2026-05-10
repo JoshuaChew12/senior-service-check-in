@@ -479,6 +479,13 @@ function showLoginPage() {
   document.getElementById("loginPage")
     .style.display = "block";
 
+  // reset UI state
+  document.getElementById("loginError")
+    .innerHTML = "";
+
+  document.getElementById("username").value = "";
+  document.getElementById("password").value = "";
+
 }
 
 // =====================================
