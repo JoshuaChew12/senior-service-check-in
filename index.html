@@ -252,9 +252,7 @@ beep.preload = "auto";
 // APP START
 // =====================================
 
-window.addEventListener("load", () => {
-
-  warmup();
+document.addEventListener("click", warmup, { once: true });
 
   // keep alive every 5 mins
   setInterval(warmup, 300000);
