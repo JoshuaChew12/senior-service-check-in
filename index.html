@@ -281,30 +281,53 @@ beep.preload = "auto";
 
 window.addEventListener("load", () => {
 
-// =====================================
+  // =====================================
   // SMART WARMUP
   // =====================================
 
   smartWarmup("page_load");
 
-  // periodic keep warm
+  // keep warm every 4 mins
   setInterval(() => {
 
     smartWarmup("heartbeat");
 
   }, 4 * 60 * 1000);
-  
+
+  // =====================================
+  // USER ACTIVITY
+  // =====================================
+
   ["click","touchstart","keypress"].forEach(event => {
 
-  document.addEventListener(event, () => {
+    document.addEventListener(event, () => {
 
-    if (
-      sessionStorage.getItem("auth") === "true"
-    ) {
-      resetIdleTimer();
-    }
+      if (
+        sessionStorage.getItem("auth") === "true"
+      ) {
+        resetIdleTimer();
+      }
+
+    });
 
   });
+
+  // =====================================
+  // LOGIN CHECK
+  // =====================================
+
+  const auth =
+    sessionStorage.getItem("auth");
+
+  if (auth === "true") {
+
+    showApp();
+
+  } else {
+
+    showLoginPage();
+
+  }
 
 });
   
