@@ -1012,6 +1012,40 @@ function showLoading() {
 
 }
 
+// ============================
+// DASHBOARD API
+// ============================
+
+function loadDashboard() {
+
+  fetch(API_URL + "?action=dashboard", {
+    cache: "no-store"
+  })
+  .then(r => r.json())
+  .then(d => {
+
+    document.getElementById("d_total").innerText = d.total || 0;
+    document.getElementById("d_checked").innerText = d.checked || 0;
+    document.getElementById("d_pending").innerText = d.pending || 0;
+    document.getElementById("d_a").innerText = d.a || 0;
+    document.getElementById("d_b").innerText = d.b || 0;
+
+  })
+  .catch(() => {});
+
+}
+
+function openDashboard() {
+
+  hideAll();
+
+  document.getElementById("dashboardPage")
+    .style.display = "block";
+
+  loadDashboard(); // 进来就刷新一次
+
+}
+
 // =====================================
 // HIDE ALL
 // =====================================
@@ -1091,40 +1125,6 @@ function smartWarmup(reason = "unknown") {
     "🔥 warmup:",
     reason
   );
-
-}
-
-// ============================
-// DASHBOARD API
-// ============================
-
-function loadDashboard() {
-
-  fetch(API_URL + "?action=dashboard", {
-    cache: "no-store"
-  })
-  .then(r => r.json())
-  .then(d => {
-
-    document.getElementById("d_total").innerText = d.total || 0;
-    document.getElementById("d_checked").innerText = d.checked || 0;
-    document.getElementById("d_pending").innerText = d.pending || 0;
-    document.getElementById("d_a").innerText = d.a || 0;
-    document.getElementById("d_b").innerText = d.b || 0;
-
-  })
-  .catch(() => {});
-
-}
-
-function openDashboard() {
-
-  hideAll();
-
-  document.getElementById("dashboardPage")
-    .style.display = "block";
-
-  loadDashboard(); // 进来就刷新一次
 
 }
 
