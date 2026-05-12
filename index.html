@@ -282,19 +282,6 @@ beep.preload = "auto";
 window.addEventListener("load", () => {
 
   // =====================================
-  // SMART WARMUP
-  // =====================================
-
-  smartWarmup("page_load");
-
-  // keep warm every 4 mins
-  setInterval(() => {
-
-    smartWarmup("heartbeat");
-
-  }, 4 * 60 * 1000);
-
-  // =====================================
   // USER ACTIVITY
   // =====================================
 
