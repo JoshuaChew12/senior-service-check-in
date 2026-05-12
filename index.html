@@ -257,6 +257,8 @@ beep.preload = "auto";
 
 window.addEventListener("load", () => {
 
+  smartWarmup("page_load");
+  
   ["click","touchstart","keypress"].forEach(event => {
 
   document.addEventListener(event, () => {
@@ -296,7 +298,7 @@ window.addEventListener("load", () => {
 
 function login() {
 
-  warmup(); // ⭐加在这里（关键）
+  smartWarmup("login_fallback");
   
   const username =
     document.getElementById("username")
@@ -987,6 +989,36 @@ function hideAll() {
   document.getElementById("resultPage")
     .style.display = "none";
 
+}
+
+// ============================
+// SMART WARMUP SYSTEM
+// ============================
+
+const WARMUP_KEY = "gas_warmup_last";
+const WARMUP_COOLDOWN = 5 * 60 * 1000; // 5 min
+
+function shouldWarmup() {
+
+  const last = Number(localStorage.getItem(WARMUP_KEY) || "0");
+
+  return Date.now() - last > WARMUP_COOLDOWN;
+}
+
+function smartWarmup(reason = "unknown") {
+
+  if (!shouldWarmup()) return;
+
+  fetch(API_URL + "?action=warmup&type=smart&reason=" + reason, {
+    method: "GET",
+    keepalive: true,
+    cache: "no-store",
+    mode: "no-cors"
+  }).catch(() => {});
+
+  localStorage.setItem(WARMUP_KEY, Date.now().toString());
+
+  console.log("🔥 warmup:", reason);
 }
 
 </script>
