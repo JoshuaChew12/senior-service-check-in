@@ -554,21 +554,7 @@ function showLoginLoading() {
 
 }
 
-// =====================================
-// WARMUP
-// =====================================
 
-function warmup() {
-
-  fetch(
-    API_URL + "?action=warmup",
-    {
-      cache: "no-store",
-      keepalive: true
-    }
-  ).catch(() => {});
-
-}
 
 // =====================================
 // API CALL
