@@ -126,6 +126,10 @@ Checked-in:
 ⌨️ Manual Input
 </button>
 
+<button onclick="openDashboard()">
+📊 Dashboard
+</button>
+
 <br>
 
 <button onclick="logout()">
@@ -174,6 +178,24 @@ Check-in
 
 <button onclick="goHome()">
 ⬅️ Back
+</button>
+
+</div>
+
+<div id="dashboardPage" style="display:none;">
+
+<h3>📊 Dashboard</h3>
+
+<div>Total: <span id="d_total">-</span></div>
+<div>Checked In: <span id="d_checked">-</span></div>
+<div>Pending: <span id="d_pending">-</span></div>
+<div>Group A: <span id="d_a">-</span></div>
+<div>Group B: <span id="d_b">-</span></div>
+
+<br>
+
+<button onclick="goHome()">
+⬅️ Home
 </button>
 
 </div>
@@ -986,6 +1008,9 @@ function hideAll() {
   document.getElementById("manualPage")
     .style.display = "none";
 
+  document.getElementById("dashboardPage")
+    .style.display = "none";
+  
   document.getElementById("resultPage")
     .style.display = "none";
 
@@ -1019,6 +1044,40 @@ function smartWarmup(reason = "unknown") {
   localStorage.setItem(WARMUP_KEY, Date.now().toString());
 
   console.log("🔥 warmup:", reason);
+}
+
+// ============================
+// DASHBOARD API
+// ============================
+
+function loadDashboard() {
+
+  fetch(API_URL + "?action=dashboard", {
+    cache: "no-store"
+  })
+  .then(r => r.json())
+  .then(d => {
+
+    document.getElementById("d_total").innerText = d.total || 0;
+    document.getElementById("d_checked").innerText = d.checked || 0;
+    document.getElementById("d_pending").innerText = d.pending || 0;
+    document.getElementById("d_a").innerText = d.a || 0;
+    document.getElementById("d_b").innerText = d.b || 0;
+
+  })
+  .catch(() => {});
+
+}
+
+function openDashboard() {
+
+  hideAll();
+
+  document.getElementById("dashboardPage")
+    .style.display = "block";
+
+  loadDashboard(); // 进来就刷新一次
+
 }
 
 </script>
