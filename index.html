@@ -281,40 +281,19 @@ beep.preload = "auto";
 
 window.addEventListener("load", () => {
 
-  // =====================================
-  // USER ACTIVITY
-  // =====================================
-
+  smartWarmup("page_load");
+  
   ["click","touchstart","keypress"].forEach(event => {
 
-    document.addEventListener(event, () => {
+  document.addEventListener(event, () => {
 
-      if (
-        sessionStorage.getItem("auth") === "true"
-      ) {
-        resetIdleTimer();
-      }
-
-    });
+    if (
+      sessionStorage.getItem("auth") === "true"
+    ) {
+      resetIdleTimer();
+    }
 
   });
-
-  // =====================================
-  // LOGIN CHECK
-  // =====================================
-
-  const auth =
-    sessionStorage.getItem("auth");
-
-  if (auth === "true") {
-
-    showApp();
-
-  } else {
-
-    showLoginPage();
-
-  }
 
 });
   
@@ -342,6 +321,8 @@ window.addEventListener("load", () => {
 // =====================================
 
 function login() {
+
+  smartWarmup("login_fallback");
   
   const username =
     document.getElementById("username")
@@ -997,6 +978,32 @@ function showLoading() {
 
 }
 
+// =====================================
+// HIDE ALL
+// =====================================
+
+function hideAll() {
+
+  document.getElementById("loginPage")
+    .style.display = "none";
+
+  document.getElementById("home")
+    .style.display = "none";
+
+  document.getElementById("scanPage")
+    .style.display = "none";
+
+  document.getElementById("manualPage")
+    .style.display = "none";
+
+  document.getElementById("dashboardPage")
+    .style.display = "none";
+  
+  document.getElementById("resultPage")
+    .style.display = "none";
+
+}
+
 // ============================
 // DASHBOARD API
 // ============================
@@ -1031,30 +1038,35 @@ function openDashboard() {
 
 }
 
-// =====================================
-// HIDE ALL
-// =====================================
 
-function hideAll() {
+// ============================
+// SMART WARMUP SYSTEM
+// ============================
 
-  document.getElementById("loginPage")
-    .style.display = "none";
+const WARMUP_KEY = "gas_warmup_last";
+const WARMUP_COOLDOWN = 5 * 60 * 1000; // 5 min
 
-  document.getElementById("home")
-    .style.display = "none";
+function shouldWarmup() {
 
-  document.getElementById("scanPage")
-    .style.display = "none";
+  const last = Number(localStorage.getItem(WARMUP_KEY) || "0");
 
-  document.getElementById("manualPage")
-    .style.display = "none";
+  return Date.now() - last > WARMUP_COOLDOWN;
+}
 
-  document.getElementById("dashboardPage")
-    .style.display = "none";
-  
-  document.getElementById("resultPage")
-    .style.display = "none";
+function smartWarmup(reason = "unknown") {
 
+  if (!shouldWarmup()) return;
+
+  fetch(API_URL + "?action=warmup&type=smart&reason=" + reason, {
+    method: "GET",
+    keepalive: true,
+    cache: "no-store",
+    mode: "no-cors"
+  }).catch(() => {});
+
+  localStorage.setItem(WARMUP_KEY, Date.now().toString());
+
+  console.log("🔥 warmup:", reason);
 }
 
 
