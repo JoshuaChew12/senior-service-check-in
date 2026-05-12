@@ -342,8 +342,6 @@ window.addEventListener("load", () => {
 // =====================================
 
 function login() {
-
-  smartWarmup("before_login");
   
   const username =
     document.getElementById("username")
@@ -1059,61 +1057,6 @@ function hideAll() {
 
 }
 
-// ============================
-// SMART WARMUP SYSTEM
-// ============================
-
-const WARMUP_KEY = "LAST_WARMUP";
-
-function shouldWarmup() {
-
-  const last =
-    Number(
-      localStorage.getItem(WARMUP_KEY) || "0"
-    );
-
-  // 4 min cooldown
-  return (
-    Date.now() - last >
-    4 * 60 * 1000
-  );
-
-}
-
-function smartWarmup(reason = "unknown") {
-
-  if (!shouldWarmup()) return;
-
-  fetch(
-
-    API_URL +
-
-    "?action=warmup" +
-
-    "&type=smart" +
-
-    "&reason=" +
-    encodeURIComponent(reason),
-
-    {
-      method: "GET",
-      keepalive: true,
-      cache: "no-store"
-    }
-
-  ).catch(() => {});
-
-  localStorage.setItem(
-    WARMUP_KEY,
-    Date.now().toString()
-  );
-
-  console.log(
-    "🔥 warmup:",
-    reason
-  );
-
-}
 
 </script>
 
