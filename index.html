@@ -281,7 +281,18 @@ beep.preload = "auto";
 
 window.addEventListener("load", () => {
 
+// =====================================
+  // SMART WARMUP
+  // =====================================
+
   smartWarmup("page_load");
+
+  // periodic keep warm
+  setInterval(() => {
+
+    smartWarmup("heartbeat");
+
+  }, 4 * 60 * 1000);
   
   ["click","touchstart","keypress"].forEach(event => {
 
@@ -322,7 +333,7 @@ window.addEventListener("load", () => {
 
 function login() {
 
-  smartWarmup("login_fallback");
+  smartWarmup("before_login");
   
   const username =
     document.getElementById("username")
@@ -1008,30 +1019,56 @@ function hideAll() {
 // SMART WARMUP SYSTEM
 // ============================
 
-const WARMUP_KEY = "gas_warmup_last";
-const WARMUP_COOLDOWN = 5 * 60 * 1000; // 5 min
+const WARMUP_KEY = "LAST_WARMUP";
 
 function shouldWarmup() {
 
-  const last = Number(localStorage.getItem(WARMUP_KEY) || "0");
+  const last =
+    Number(
+      localStorage.getItem(WARMUP_KEY) || "0"
+    );
 
-  return Date.now() - last > WARMUP_COOLDOWN;
+  // 4 min cooldown
+  return (
+    Date.now() - last >
+    4 * 60 * 1000
+  );
+
 }
 
 function smartWarmup(reason = "unknown") {
 
   if (!shouldWarmup()) return;
 
-  fetch(API_URL + "?action=warmup&type=smart&reason=" + reason, {
-    method: "GET",
-    keepalive: true,
-    cache: "no-store",
-    mode: "no-cors"
-  }).catch(() => {});
+  fetch(
 
-  localStorage.setItem(WARMUP_KEY, Date.now().toString());
+    API_URL +
 
-  console.log("🔥 warmup:", reason);
+    "?action=warmup" +
+
+    "&type=smart" +
+
+    "&reason=" +
+    encodeURIComponent(reason),
+
+    {
+      method: "GET",
+      keepalive: true,
+      cache: "no-store"
+    }
+
+  ).catch(() => {});
+
+  localStorage.setItem(
+    WARMUP_KEY,
+    Date.now().toString()
+  );
+
+  console.log(
+    "🔥 warmup:",
+    reason
+  );
+
 }
 
 // ============================
