@@ -316,6 +316,8 @@ window.addEventListener("load", () => {
 
   if (auth === "true") {
 
+    startSessionMonitor();
+
     showApp();
 
   } else {
@@ -431,7 +433,19 @@ function login() {
         data.role
       );
 
+      // =====================================
+      // SAVE SESSION TOKEN
+      // =====================================
+
+      sessionStorage.setItem(
+        "sessionToken",
+        data.token
+      );
+
       resetIdleTimer();
+
+      // start session monitor
+      startSessionMonitor();
 
       showApp();
 
@@ -497,6 +511,17 @@ function login() {
 
 function logout() {
 
+  // stop monitor
+  if (sessionMonitor) {
+
+    clearInterval(
+      sessionMonitor
+    );
+
+    sessionMonitor = null;
+
+  }
+
   sessionStorage.clear();
 
   goHome();
@@ -504,6 +529,89 @@ function logout() {
   hideAll();
 
   showLoginPage();
+
+}
+
+let sessionMonitor = null;
+
+function startSessionMonitor() {
+
+  // avoid duplicate interval
+  if (sessionMonitor) {
+    return;
+  }
+
+  sessionMonitor = setInterval(async () => {
+
+    try {
+
+      const username =
+        sessionStorage.getItem(
+          "username"
+        );
+
+      const token =
+        sessionStorage.getItem(
+          "sessionToken"
+        );
+
+      // no session
+      if (!username || !token) {
+        return;
+      }
+
+      const res = await fetch(
+
+        API_URL +
+
+        "?action=verifySession" +
+
+        "&username=" +
+        encodeURIComponent(username) +
+
+        "&token=" +
+        encodeURIComponent(token),
+
+        {
+          cache: "no-store",
+          keepalive: true
+        }
+
+      );
+
+      const data =
+        await res.json();
+
+      // =====================================
+      // SESSION INVALID
+      // =====================================
+
+      if (!data.success) {
+
+        clearInterval(
+          sessionMonitor
+        );
+
+        sessionMonitor = null;
+
+        alert(
+          "账号已在其他设备登录"
+        );
+
+        logout();
+
+      }
+
+    } catch (err) {
+
+      console.log(
+        "session verify failed",
+        err
+      );
+
+    }
+
+  }, 30000);
 
 }
 
