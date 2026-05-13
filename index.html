@@ -281,53 +281,19 @@ beep.preload = "auto";
 
 window.addEventListener("load", () => {
 
-  // =====================================
-  // SMART WARMUP
-  // =====================================
-
   smartWarmup("page_load");
-
-  // keep warm every 4 mins
-  setInterval(() => {
-
-    smartWarmup("heartbeat");
-
-  }, 4 * 60 * 1000);
-
-  // =====================================
-  // USER ACTIVITY
-  // =====================================
-
+  
   ["click","touchstart","keypress"].forEach(event => {
 
-    document.addEventListener(event, () => {
+  document.addEventListener(event, () => {
 
-      if (
-        sessionStorage.getItem("auth") === "true"
-      ) {
-        resetIdleTimer();
-      }
-
-    });
+    if (
+      sessionStorage.getItem("auth") === "true"
+    ) {
+      resetIdleTimer();
+    }
 
   });
-
-  // =====================================
-  // LOGIN CHECK
-  // =====================================
-
-  const auth =
-    sessionStorage.getItem("auth");
-
-  if (auth === "true") {
-
-    showApp();
-
-  } else {
-
-    showLoginPage();
-
-  }
 
 });
   
@@ -356,7 +322,7 @@ window.addEventListener("load", () => {
 
 function login() {
 
-  smartWarmup("before_login");
+  smartWarmup("login_fallback");
   
   const username =
     document.getElementById("username")
@@ -1012,6 +978,32 @@ function showLoading() {
 
 }
 
+// =====================================
+// HIDE ALL
+// =====================================
+
+function hideAll() {
+
+  document.getElementById("loginPage")
+    .style.display = "none";
+
+  document.getElementById("home")
+    .style.display = "none";
+
+  document.getElementById("scanPage")
+    .style.display = "none";
+
+  document.getElementById("manualPage")
+    .style.display = "none";
+
+  document.getElementById("dashboardPage")
+    .style.display = "none";
+  
+  document.getElementById("resultPage")
+    .style.display = "none";
+
+}
+
 // ============================
 // DASHBOARD API
 // ============================
@@ -1046,87 +1038,37 @@ function openDashboard() {
 
 }
 
-// =====================================
-// HIDE ALL
-// =====================================
-
-function hideAll() {
-
-  document.getElementById("loginPage")
-    .style.display = "none";
-
-  document.getElementById("home")
-    .style.display = "none";
-
-  document.getElementById("scanPage")
-    .style.display = "none";
-
-  document.getElementById("manualPage")
-    .style.display = "none";
-
-  document.getElementById("dashboardPage")
-    .style.display = "none";
-  
-  document.getElementById("resultPage")
-    .style.display = "none";
-
-}
 
 // ============================
 // SMART WARMUP SYSTEM
 // ============================
 
-const WARMUP_KEY = "LAST_WARMUP";
+const WARMUP_KEY = "gas_warmup_last";
+const WARMUP_COOLDOWN = 5 * 60 * 1000; // 5 min
 
 function shouldWarmup() {
 
-  const last =
-    Number(
-      localStorage.getItem(WARMUP_KEY) || "0"
-    );
+  const last = Number(localStorage.getItem(WARMUP_KEY) || "0");
 
-  // 4 min cooldown
-  return (
-    Date.now() - last >
-    4 * 60 * 1000
-  );
-
+  return Date.now() - last > WARMUP_COOLDOWN;
 }
 
 function smartWarmup(reason = "unknown") {
 
   if (!shouldWarmup()) return;
 
-  fetch(
+  fetch(API_URL + "?action=warmup&type=smart&reason=" + reason, {
+    method: "GET",
+    keepalive: true,
+    cache: "no-store",
+    mode: "no-cors"
+  }).catch(() => {});
 
-    API_URL +
+  localStorage.setItem(WARMUP_KEY, Date.now().toString());
 
-    "?action=warmup" +
-
-    "&type=smart" +
-
-    "&reason=" +
-    encodeURIComponent(reason),
-
-    {
-      method: "GET",
-      keepalive: true,
-      cache: "no-store"
-    }
-
-  ).catch(() => {});
-
-  localStorage.setItem(
-    WARMUP_KEY,
-    Date.now().toString()
-  );
-
-  console.log(
-    "🔥 warmup:",
-    reason
-  );
-
+  console.log("🔥 warmup:", reason);
 }
+
 
 </script>
 
