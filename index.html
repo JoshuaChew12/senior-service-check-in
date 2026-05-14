@@ -263,7 +263,7 @@ let currentMode = "";
 let scanCooldown = false;
 let idleTimer = null;
 
-const IDLE_LIMIT = 10 * 60 * 1000;
+const IDLE_LIMIT = 15 * 60 * 1000;
 const WARMUP_KEY = "gas_warmup_last";
 const WARMUP_COOLDOWN = 4 * 60 * 1000;
 
@@ -934,9 +934,6 @@ function handleResult(data) {
 
     beep.play();
 
-    db.ref("count")
-      .transaction(v => (v || 0) + 1);
-
   }
 
   // =====================================
@@ -1179,22 +1176,19 @@ function smartWarmup(type = "smart") {
 
   if (!shouldWarmup()) return;
 
-  fetch(
+  const url =
 
     API_URL +
 
     "?action=warmup" +
 
-    "&type=" + encodeURIComponent(type),
+    "&type=" + encodeURIComponent(type);
 
-    {
-      method: "GET",
-      cache: "no-store",
-      keepalive: true,
-      mode: "no-cors"
-    }
+  try {
 
-  ).catch(() => {});
+    navigator.sendBeacon(url);
+
+  } catch (err) {}
 
   localStorage.setItem(
     WARMUP_KEY,
