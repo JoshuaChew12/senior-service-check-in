@@ -682,53 +682,56 @@ function showLoginLoading() {
 
 function callAPI(id) {
 
-showLoading();
+  showLoading();
 
-const controller = new AbortController();
+  const controller = new AbortController();
 
-const timeout = setTimeout(() => {
-controller.abort();
-}, 20000);
+  const timeout = setTimeout(() => {
 
-fetch(
-API_URL + "?id=" + encodeURIComponent(id),
-{
-signal: controller.signal,
-cache: "no-store",
-keepalive: true
-}
-)
+    controller.abort();
 
-.then(r => r.json())
+  }, 20000);
 
-.then(data => {
+  fetch(
 
-clearTimeout(timeout);
+    API_URL + "?id=" +
+    encodeURIComponent(id),
 
-// 🔥 核心优化：先让浏览器画一帧 UI
-requestAnimationFrame(() => {
-handleResult(data);
-});
+    {
+      signal: controller.signal,
+      cache: "no-store",
+      keepalive: true
+    }
 
-})
+  )
 
-.catch(() => {
+  .then(r => r.json())
 
-clearTimeout(timeout);
+  .then(data => {
 
-// 同样保证 UI 先渲染
-requestAnimationFrame(() => {
-handleResult({
-type: "error",
-message: "Network error / timeout"
-});
-});
+    handleResult(data);
 
-})
+  })
 
-.finally(() => {
-clearTimeout(timeout);
-});
+  .catch(() => {
+
+    handleResult({
+
+      type: "error",
+
+      message:
+      "Network error / timeout"
+
+    });
+
+  })
+
+  .finally(() => {
+
+    clearTimeout(timeout);
+
+  });
+
 }
 
 // =====================================
@@ -876,137 +879,139 @@ function manualCheck() {
 
 function handleResult(data) {
 
-resetIdleTimer();
-hideAll();
+  resetIdleTimer();
+  
+  hideAll();
 
-const page = document.getElementById("resultPage");
-page.style.display = "block";
+  const page =
+    document.getElementById("resultPage");
 
-let html = "";
+  page.style.display = "block";
 
-// =====================
-// SUCCESS
-// =====================
-if (data.type === "success") {
+  let html = "";
 
-page.className = "success";
+  // =====================================
+  // SUCCESS
+  // =====================================
 
-html = `
-<div style="
-font-size:70px;
-color:green;
-font-weight:bold;
-">
-${data.chineseName}
-</div>
+  if (data.type === "success") {
 
-<div style="
-font-size:40px;
-">
-${data.englishName}
-</div>
+    page.className = "success";
 
-<br>
+    html = `
 
-<div style="
-font-size:30px;
-">
-Checked In
-</div>
+      <div style="
+      font-size:70px;
+      color:green;
+      font-weight:bold;
+      ">
+        ${data.chineseName}
+      </div>
 
-<div style="
-font-size:26px;
-">
-${data.time}
-</div>
-`;
+      <div style="
+      font-size:40px;
+      ">
+        ${data.englishName}
+      </div>
 
-}
+      <br>
 
-// =====================
-// DUPLICATE
-// =====================
-else if (data.type === "duplicate") {
+      <div style="
+      font-size:30px;
+      ">
+        Checked In
+      </div>
 
-page.className = "duplicate";
+      <div style="
+      font-size:26px;
+      ">
+        ${data.time}
+      </div>
 
-html = `
-<div style="
-font-size:50px;
-color:orange;
-">
-Already Checked In
-</div>
+    `;
 
-<br>
+    beep.currentTime = 0;
 
-<div style="
-font-size:60px;
-">
-${data.chineseName}
-</div>
+    beep.play();
 
-<div style="
-font-size:40px;
-">
-${data.englishName}
-</div>
+    db.ref("count")
+      .transaction(v => (v || 0) + 1);
 
-<br>
+  }
 
-<div style="
-font-size:28px;
-">
-Check-in Time
-</div>
+  // =====================================
+  // DUPLICATE
+  // =====================================
 
-<div style="
-font-size:32px;
-">
-${data.time}
-</div>
-`;
-}
+  else if (data.type === "duplicate") {
 
-// =====================
-// ERROR
-// =====================
-else {
+    page.className = "duplicate";
 
-page.className = "error";
+    html = `
 
-html = `
-<div style="
-font-size:50px;
-color:red;
-">
-${data.message}
-</div>
-`;
-}
+      <div style="
+      font-size:50px;
+      color:orange;
+      ">
+        Already Checked In
+      </div>
 
-// =====================
-// 🔥 1. UI FIRST (instant render, MUST be sync)
-// =====================
-document.getElementById("resultContent").innerHTML = html;
+      <br>
 
-// =====================
-// 🔥 2. SIDE EFFECTS (DELAYED, NON-BLOCKING)
-// =====================
-setTimeout(() => {
+      <div style="
+      font-size:60px;
+      ">
+        ${data.chineseName}
+      </div>
 
-if (data.type === "success") {
+      <div style="
+      font-size:40px;
+      ">
+        ${data.englishName}
+      </div>
 
-// sound
-beep.currentTime = 0;
-beep.play();
+      <br>
 
-// firebase update (non-blocking)
-db.ref("count").transaction(v => (v || 0) + 1);
+      <div style="
+      font-size:28px;
+      ">
+        Check-in Time
+      </div>
 
-}
+      <div style="
+      font-size:32px;
+      ">
+        ${data.time}
+      </div>
 
-}, 0);
+    `;
+
+  }
+
+  // =====================================
+  // ERROR
+  // =====================================
+
+  else {
+
+    page.className = "error";
+
+    html = `
+
+      <div style="
+      font-size:50px;
+      color:red;
+      ">
+        ${data.message}
+      </div>
+
+    `;
+
+  }
+
+  document.getElementById("resultContent")
+    .innerHTML = html;
+
 }
 
 // =====================================
