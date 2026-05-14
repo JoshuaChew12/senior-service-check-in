@@ -934,6 +934,9 @@ function handleResult(data) {
 
     beep.play();
 
+    db.ref("count")
+      .transaction(v => (v || 0) + 1);
+
   }
 
   // =====================================
