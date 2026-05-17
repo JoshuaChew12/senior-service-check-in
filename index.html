@@ -266,7 +266,7 @@ let idleTimer = null;
 const IDLE_LIMIT = 15 * 60 * 1000;
 const WARMUP_KEY = "gas_warmup_last";
 const WARMUP_COOLDOWN = 4 * 60 * 1000;
-const pendingMap = {};
+const inFlight = new Set();
 
 // =====================================
 // PRELOAD BEEP
@@ -683,46 +683,23 @@ function showLoginLoading() {
 
 function callAPI(id) {
 
-  alert("CALL API ENTER: " + id);
   // =========================
   // CLEAN ID
   // =========================
 
-  id = id
-    .trim()
-    .replace(/\s+/g, "")
-    .toUpperCase();
+  id = id.trim().replace(/\s+/g, "").toUpperCase();
 
   // =========================
-  // FRONTEND PER-ID LOCK
+  // IN-FLIGHT LOCK
   // =========================
 
-  const now = Date.now();
-
-  if (
-    pendingMap[id] &&
-    now - pendingMap[id] < 8000
-  ) {
-    console.log("FRONTEND BLOCKED:", id);
-    
+  if (inFlight.has(id)) {
+    showToast("Please Wait...");
     navigator.vibrate?.(50);
-
-    showToast("Please wait...");
-
-   return;
+    return;
   }
 
-  // lock this ID for 8s
-  pendingMap[id] = now;
-
-  console.log("API SENT:", id);
-  
-  // auto cleanup
-  setTimeout(() => {
-
-    delete pendingMap[id];
-
-  }, 10000);
+  inFlight.add(id);
 
   // =========================
   // LOADING
@@ -733,55 +710,35 @@ function callAPI(id) {
   const controller = new AbortController();
 
   const timeout = setTimeout(() => {
-
     controller.abort();
-
   }, 20000);
 
   // =========================
   // FETCH
   // =========================
 
-  fetch(
-
-    API_URL + "?id=" +
-    encodeURIComponent(id),
-
-    {
-      signal: controller.signal,
-      cache: "no-store",
-      keepalive: true
-    }
-
-  )
-
+  fetch(API_URL + "?id=" + encodeURIComponent(id), {
+    signal: controller.signal,
+    cache: "no-store",
+    keepalive: true
+  })
   .then(r => r.json())
-
   .then(data => {
-
     handleResult(data);
-
   })
-
   .catch(() => {
-
     handleResult({
-
       type: "error",
-
-      message:
-      "Network error / timeout"
-
+      message: "Network error / timeout"
     });
-
   })
-
   .finally(() => {
 
     clearTimeout(timeout);
 
+    // 🔥 unlock here
+    inFlight.delete(id);
   });
-
 }
 // =====================================
 // OPEN SCAN
