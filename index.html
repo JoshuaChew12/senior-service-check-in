@@ -262,12 +262,10 @@ let scannerStarted = false;
 let currentMode = "";
 let scanCooldown = false;
 let idleTimer = null;
-let uiLocked = false;
 
 const IDLE_LIMIT = 15 * 60 * 1000;
 const WARMUP_KEY = "gas_warmup_last";
 const WARMUP_COOLDOWN = 4 * 60 * 1000;
-const inFlight = new Set();
 
 // =====================================
 // PRELOAD BEEP
@@ -676,62 +674,7 @@ function showLoginLoading() {
 
 }
 
-function lockUI() {
 
-  uiLocked = true;
-
-  // disable input
-  const input = document.getElementById("idInput");
-  if (input) input.disabled = true;
-
-  // disable manual button（更精准）
-  const manualBtn = document.querySelector("#manualPage button");
-  if (manualBtn) {
-    manualBtn.disabled = true;
-    manualBtn.innerText = "Processing...";
-  }
-
-  // disable scan button
-  const scanBtn = document.querySelector("#home button");
-  if (scanBtn) {
-    scanBtn.disabled = true;
-  }
-}
-
-function unlockUI() {
-
-  uiLocked = false;
-
-  // enable input
-  const input = document.getElementById("idInput");
-  if (input) input.disabled = false;
-
-  // enable manual button
-  const manualBtn = document.querySelector("#manualPage button");
-  if (manualBtn) {
-    manualBtn.disabled = false;
-    manualBtn.innerText = "Check-in";
-  }
-
-  // enable scan button
-  const scanBtn = document.querySelector("#home button");
-  if (scanBtn) {
-    scanBtn.disabled = false;
-  }
-}
-
-function submitID(rawId) {
-
-  if (uiLocked) return;
-
-  const id = rawId
-    .trim()
-    .replace(/\s+/g, "")
-    .toUpperCase();
-
-  lockUI();        // 🔥 先锁 UI
-  callAPI(id);     // 再发请求
-}
 
 // =====================================
 // API CALL
@@ -744,29 +687,53 @@ function callAPI(id) {
   const controller = new AbortController();
 
   const timeout = setTimeout(() => {
+
     controller.abort();
+
   }, 20000);
 
-  fetch(API_URL + "?id=" + encodeURIComponent(id), {
-    signal: controller.signal,
-    cache: "no-store",
-    keepalive: true
-  })
+  fetch(
+
+    API_URL + "?id=" +
+    encodeURIComponent(id),
+
+    {
+      signal: controller.signal,
+      cache: "no-store",
+      keepalive: true
+    }
+
+  )
+
   .then(r => r.json())
+
   .then(data => {
+
     handleResult(data);
+
   })
+
   .catch(() => {
+
     handleResult({
+
       type: "error",
-      message: "Network error / timeout"
+
+      message:
+      "Network error / timeout"
+
     });
+
   })
+
   .finally(() => {
+
     clearTimeout(timeout);
+
   });
+
 }
-  
+
 // =====================================
 // OPEN SCAN
 // =====================================
@@ -867,7 +834,8 @@ async function onScanSuccess(text) {
 
   await scanner.pause(true);
 
-  submitID(text);
+  callAPI(text);
+
 }
 
 // =====================================
@@ -901,7 +869,7 @@ function manualCheck() {
 
   if (!id) return;
 
-  submitID(text);
+  callAPI(id);
 
 }
 
@@ -911,8 +879,6 @@ function manualCheck() {
 
 function handleResult(data) {
 
-  unlockUI();   // 🔥 这里解锁
-  
   resetIdleTimer();
   
   hideAll();
