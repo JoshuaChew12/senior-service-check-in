@@ -702,7 +702,8 @@ function callAPI(id) {
     pendingMap[id] &&
     now - pendingMap[id] < 8000
   ) {
-
+    console.log("FRONTEND BLOCKED:", id);
+    
     navigator.vibrate?.(50);
 
     showToast("Please wait...");
@@ -713,6 +714,8 @@ function callAPI(id) {
   // lock this ID for 8s
   pendingMap[id] = now;
 
+  console.log("API SENT:", id);
+  
   // auto cleanup
   setTimeout(() => {
 
