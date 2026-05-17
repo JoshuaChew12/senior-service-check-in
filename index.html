@@ -266,6 +266,7 @@ let idleTimer = null;
 const IDLE_LIMIT = 15 * 60 * 1000;
 const WARMUP_KEY = "gas_warmup_last";
 const WARMUP_COOLDOWN = 4 * 60 * 1000;
+const pendingMap = {};
 
 // =====================================
 // PRELOAD BEEP
@@ -682,6 +683,45 @@ function showLoginLoading() {
 
 function callAPI(id) {
 
+  // =========================
+  // CLEAN ID
+  // =========================
+
+  id = id
+    .trim()
+    .replace(/\s+/g, "")
+    .toUpperCase();
+
+  // =========================
+  // FRONTEND PER-ID LOCK
+  // =========================
+
+  const now = Date.now();
+
+  if (
+    pendingMap[id] &&
+    now - pendingMap[id] < 5000
+  ) {
+
+    console.log("Blocked duplicate:", id);
+
+    return;
+  }
+
+  // lock this ID for 5s
+  pendingMap[id] = now;
+
+  // auto cleanup
+  setTimeout(() => {
+
+    delete pendingMap[id];
+
+  }, 7000);
+
+  // =========================
+  // LOADING
+  // =========================
+
   showLoading();
 
   const controller = new AbortController();
@@ -691,6 +731,10 @@ function callAPI(id) {
     controller.abort();
 
   }, 20000);
+
+  // =========================
+  // FETCH
+  // =========================
 
   fetch(
 
@@ -733,7 +777,6 @@ function callAPI(id) {
   });
 
 }
-
 // =====================================
 // OPEN SCAN
 // =====================================
