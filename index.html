@@ -988,21 +988,6 @@ function handleResult(data) {
 
   }
 
-  else if (data.type === "duplicate_request") {
-
-    page.className = "error";
-
-    html = `
-      <div style="font-size:50px;color:orange;">
-        Request Already Progressing
-      </div>
-
-      <div style="font-size:26px;">
-        Please Wait
-      </div>
-    `;
-  }
-    
   // =====================================
   // ERROR
   // =====================================
