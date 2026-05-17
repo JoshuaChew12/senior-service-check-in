@@ -700,15 +700,17 @@ function callAPI(id) {
 
   if (
     pendingMap[id] &&
-    now - pendingMap[id] < 5000
+    now - pendingMap[id] < 8000
   ) {
 
-    console.log("Blocked duplicate:", id);
+    navigator.vibrate?.(50);
 
-    return;
+    showToast("Please wait...");
+
+   return;
   }
 
-  // lock this ID for 5s
+  // lock this ID for 8s
   pendingMap[id] = now;
 
   // auto cleanup
@@ -716,7 +718,7 @@ function callAPI(id) {
 
     delete pendingMap[id];
 
-  }, 7000);
+  }, 10000);
 
   // =========================
   // LOADING
